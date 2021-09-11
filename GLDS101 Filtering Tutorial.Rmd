@@ -1,0 +1,96 @@
+---
+title: "Sub-setting Basics GLDS101 Example"
+author: "Ivan Korostenskij"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Summary
+
+This is a quick description of the code used to subset and filter genomic expression data in R. The example comes from the [GLDS-101 data set](https://genelab-data.ndc.nasa.gov/genelab/accession/GLDS-101/) from NASA's genelab. This also includes how to install and activate the needed packages, importing, and exporting.
+
+### Installing and Activating the Tidyverse Library
+
+Installing the packages:
+```{r installtidy}
+install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+```
+Note: This must be done once per initial R installation
+
+Activating the packages:
+```{r librarytidy}
+library(tidyverse)
+```
+Note: This must be done every time an R script is loaded
+
+### Dataset work
+#### Importing
+This will bring up a prompt to select the data set to import, then sorting it into a Tibble (a modern and easily manipulated data frame)
+```{r import, echo=TRUE, eval=FALSE}
+GLDS101_Sorted <- read_csv(file.choose()) %>%
+  tibble()
+```
+```{r eval=FALSE, include=FALSE}
+GLDS101_Sorted <- read_delim('C:\\Users\\theas\\Documents\\tahimictest1\\GLDS-101_rna_seq_differential_expression.csv')
+```
+
+#### Functions used in final script
+This filters the data set by filtering the Adj.p.value_(GC)v(FLT) column to only include values lower than .05
+```{r filterpval, echo=TRUE, eval=FALSE}
+  filter(GLDS101_Sorted, `Adj.p.value_(FLT)v(GC)`  < 0.05)
+```
+
+This filters the data set by filtering the Log2fc_(FLT)vs(GC) column to only include values more than .3 OR (|) less than -.3
+```{r filterlog2, eval=FALSE}
+  filter(GLDS101_Sorted, `Log2fc_(FLT)v(GC)` > .3 | `Log2fc_(FLT)v(GC)` < -.3)
+```
+
+This drops the missing (NA) values from the SYMBOL column
+```{r dropna, results='hide', eval=FALSE}
+  drop_na(GLDS101_Sorted, SYMBOL)
+```
+
+This filters the SYMBOL column (by reversing a filter function with the ! operator) to exclude RIKEN genes
+```{r, results='hide', eval=FALSE}
+  filter(GLDS101_Sorted, !grepl("RIKEN", GENENAME))
+```
+
+This selects only SYMBOL, Log2fc(FLT)v(GC), and  Adj.p.value_(FLT)v(GC) columns, in that order, to be shown in the data set
+```{r select, eval=FALSE}
+  select(SYMBOL, `Log2fc_(FLT)v(GC)`, `Adj.p.value_(FLT)v(GC)` ) %>%
+```
+
+####Exporting
+This function exports the data set as a .csv file named "GLDS101_Sorted" into your working directory to your computer
+```{r exportcsv, eval=FALSE}
+  write_delim(GLDS101_Sorted, file = 'GLDS101_Sorted.csv')
+```
+
+## Full function
+This script uses the %>% operator to both save time in writing out GLDS101_Sorted and as a way to space the code out into multiple lines. Putting %>% before each new instruction pulls the data set we first set %>% after. 
+
+```{r, results='hide'}
+GLDS101_Sorted <- read_csv(file.choose()) %>%
+  tibble() %>%
+  filter(`Adj.p.value_(GC)v(FLT)` < 0.05) %>%
+  filter(`Log2fc_(FLT)v(GC)` > .3 | `Log2fc_(FLT)v(GC)` < -.3) %>%
+  drop_na(SYMBOL) %>%
+  filter(!grepl("RIKEN", GENENAME)) %>%
+  select(SYMBOL, `Log2fc_(FLT)v(GC)`, `Adj.p.value_(FLT)v(GC)` ) %>%
+  write_delim(file = 'GLDS101_Sorted.csv')
+```
+
+A quick check on the data set
+```{r}
+summary(GLDS101_Sorted)
+```
+
+```{r, include=FALSE, eval=FALSE}
+ggplot2(GLDS101_Sorted)+
+  geom_point()
+```
