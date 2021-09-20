@@ -1,8 +1,8 @@
 library(tidyverse)
 library(WebGestaltR)
+library(openxlsx)
 
-
-GLDS101 <- read_xlsx("GLDS-101_rna_seq_differential_expression.xlsx")
+GLDS101 <- read_xlsx("GLDS-101_rna_seq_differential_expression.csv")
 
 GLDS101_Sorted <- GLDS101 %>%
   tibble() %>%
@@ -13,16 +13,14 @@ GLDS101_Sorted <- GLDS101 %>%
   select(1:5, `Log2fc_(FLT)v(GC)`, `Adj.p.value_(FLT)v(GC)`)
 
 Symbol <- GLDS101_Sorted$SYMBOL %>%
-  as.list()
-
-WebGTxt <- read.table("Webg920.txt")
+  as.vector()
 
 WebGestaltR(
   enrichMethod = "ORA",
   organism = "mmusculus",
   enrichDatabase =  'geneontology_Biological_Process',
   enrichDatabaseType = "genesymbol",
-  interestGeneFile = "Webg920.txt",
+  interestGene = Symbol,
   interestGeneType = "genesymbol",
   referenceSet = "genome",
   isOutput = TRUE,
