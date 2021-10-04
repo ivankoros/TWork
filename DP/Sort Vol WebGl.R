@@ -15,7 +15,7 @@ SortFun <- function(filename, Adjpcol, Log2fcol, Symbolcol, outName) {
                 col_names = TRUE)
 
   DF <- DF %>%
-    rename(Adjp=Adjpcol, 
+    dplyr::rename(Adjp=Adjpcol, 
            Log2f=Log2fcol,
            SymbolI=Symbolcol) %>%
     mutate(
@@ -27,8 +27,7 @@ SortFun <- function(filename, Adjpcol, Log2fcol, Symbolcol, outName) {
     filter(Adjp < 0.05) %>%
     filter(abs(Log2f) >= .305) %>%
     drop_na(SymbolI) %>%
-    filter(!grepl("Rik", SymbolI)) %>%
-    select(SymbolI, Log2f, Adjp, SaR) %>%
+    filter(!grepl("Rik", SymbolI))%>%
     as.data.frame()
    
   GLabel <- getGenes(DF$SymbolI, fields=c('symbol', 'name')) %>%
@@ -39,7 +38,7 @@ SortFun <- function(filename, Adjpcol, Log2fcol, Symbolcol, outName) {
                        Name = GLabel$name) %>%
     relocate(c(Symbol, Name), .before = SymbolI)
   
-  write_csv(DF, paste0(outName, "_sorted.csv"))
+  write_csv(DF, paste(outName, "Filtered.csv"))
   
 }
 
@@ -54,7 +53,7 @@ VolFun <- function(filename, Adjpcol, Log2fcol, Symbolcol, outName) {
                    col_names = TRUE)
   
     DF_Raw <- DF_Raw %>%
-    rename(Adjp=Adjpcol, 
+      dplyr::rename(Adjp=Adjpcol, 
            Log2f=Log2fcol,
            SymbolI=Symbolcol) %>%
     mutate(
@@ -83,7 +82,7 @@ VolFun <- function(filename, Adjpcol, Log2fcol, Symbolcol, outName) {
     geom_label_repel(
       data=slice_min(DF_Raw, Adjp,n=10), aes(label= Symbol))
   
-  ggsave(paste0(outName, ".pdf"),
+  ggsave(paste(outName, "Volcano .pdf"),
          plot = last_plot())
   
 }
@@ -99,7 +98,7 @@ WebG <- function(filename, Adjpcol, Log2fcol, Symbolcol, outName) {
                          col_names = TRUE)
     
     DF_Sorted <- DF_Raw %>%
-      rename(Adjp=Adjpcol, 
+      dplyr::rename(Adjp=Adjpcol, 
              Log2f=Log2fcol,
              SymbolI=Symbolcol) %>% 
       filter(Adjp < 0.05) %>%
@@ -151,7 +150,7 @@ VolFun(filename = "DP IR vs DP Sham DEGs.xlsx",
        Adjpcol = 7,
        Log2fcol = 3,
        Symbolcol = 1,
-       outName = "DP IR vs DP Sham Volcano")
+       outName = "DP IR vs DP Sham")
 
 WebG(filename = "DP IR vs DP Sham DEGs.xlsx",
      Adjpcol = 7,
@@ -177,7 +176,3 @@ WebG(filename = "DP Sham vs CD Sham DEGs.xlsx",
        Log2fcol = 3,
        Symbolcol = 1,
        outName = "DP Sham vs CD Sham")
-
-
-
-
