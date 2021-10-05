@@ -81,11 +81,15 @@ SVW <- function(filename, Adjpcol, Log2fcol, Symbolcol, outName) {
       fdrMethod = "BH",
       outputDirectory = getwd(),
       dagColor = "continuous",
-      projectName = paste(outName, "WebG Results"),
+      projectName = paste(outName, "WebG"),
       gseaPlotFormat = c("png", "svg"),
       setCoverNum = 10,
       hostName = "http://www.webgestalt.org/")
     
+    dir <- getwd()
+    
+    read_tsv(paste0(dir,"/Project_", outName, " WebG", "/enrichment_results_", outName, " WebG.txt")) %>%
+      write.xlsx(paste0(outName, " Enrichment Results.xlsx"))
   }
   
 # Example
@@ -93,5 +97,5 @@ SVW(filename = "DP IR vs DP Sham DEGs.xlsx",
     Adjpcol = 7,
     Log2fcol = 3,
     Symbolcol = 1,
-    outName = "testf")
-
+    outName = "DP IR vs DP Sham")
+  
