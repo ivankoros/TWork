@@ -29,7 +29,7 @@ SVW <- function(filename, Adjpcol, Log2fcol, Symbolcol, outName) {
         Log2f < -.3 & Adjp < .05 ~ "Downregulated",
         TRUE ~ "NotSignificant"))
   
-  GLabel <- getGenes(DF_Raw$SymbolI, fields=c('symbol', 'name')) %>%
+  GLabel <- getGenes(DF_Raw$SymbolI, fields=c('symbol', 'name'), species="mouse") %>%
     as.data.frame()
   
   DF_Named <- DF_Raw %>%
@@ -41,12 +41,13 @@ SVW <- function(filename, Adjpcol, Log2fcol, Symbolcol, outName) {
     filter(Adjp < 0.05) %>%
     filter(abs(Log2f) >= .305) %>%
     drop_na(SymbolI) %>%
-    filter(!grepl("Rik", Symbol))%>%
+    filter(!grepl("Rik", Symbol,
+                  ignore.case = T))%>%
     as.data.frame()
   
   write.xlsx(DF_Sorted, paste(outName, "Filtered.xlsx"))
   
-  # Vol
+# Vol
   ggplot(DF_Named, aes(x=Log2f, y=-log10(Adjp)), label=SaR) +
     geom_point(aes(color=SaR), size=1) +
     scale_color_manual(values=c('blue', 'grey70', "green3")) +
@@ -62,7 +63,7 @@ SVW <- function(filename, Adjpcol, Log2fcol, Symbolcol, outName) {
   ggsave(paste(outName, "Volcano .pdf"),
          plot = last_plot())
   
-  # WebG
+# WebG
   Symbol <- DF_Sorted$Symbol %>%
     as.vector()
   
