@@ -1,4 +1,3 @@
- # Sort
 SVW <- function(filename, Adjpcol, Log2fcol, Symbolcol, outName) {
   
   if((grepl("\\.xlsx$", filename)))
@@ -39,27 +38,31 @@ SVW <- function(filename, Adjpcol, Log2fcol, Symbolcol, outName) {
     drop_na(Symbol) %>%
     filter(!str_detect(Name, "expressed sequence"),
            !str_detect(Name, "predicted gene"),
-           !str_detect(Name, "cDNA"))
+           !str_detect(Name, "cDNA"),
+           !str_detect(Name, "pseudogene"))
   
   write.xlsx(DF_Sorted, paste(outName, "Filtered.xlsx"))
   
- # Vol
+# Vol
   ggplot(DF_Named, aes(x=Log2f, y=-log10(Adjp)), label=SaR) +
     geom_point(aes(color=SaR), size=1) +
-    scale_color_manual(values=c('blue', 'grey70', "green3")) +
+    scale_color_manual(values=c('midnightblue', 'grey70', "darkred")) +
     theme_bw() + 
     theme(panel.border = element_blank(),
           panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
           axis.line = element_line(colour = "black")) +
     xlim(-5, 5) +
-    geom_label_repel(
-      data=slice_min(DF_Named, Adjp,n=10), aes(label= Symbol))
+    xlab("Log2 fc") +
+    geom_text_repel(
+      data=slice_min(DF_Named, Adjp,n=10), aes(label= Symbol)
+  )
   
-  ggsave(paste(outName, "Volcano .pdf"),
-         plot = last_plot())
+  ggsave(paste(outName, "Volcano .jpg"),
+         plot = last_plot(),
+         device = "jpg")
   
- # WebG
+# WebG
   Symbol <- DF_Sorted$Symbol %>%
     as.vector()
   
