@@ -1,7 +1,15 @@
+if (!require(BiocManager))
+  install.packages('BiocManger')
+if (!require(DESeq2))
+  BiocManager::install('DESeq2')
+library(DESeq2)
+if (!require(tidyverse))
+  install.packages('tidyverse')
 library(tidyverse)
+if (!require(openxlsx))
+  install.packages('openxlsx')
 library(openxlsx)
-library(mygene)
-library(ggrepel)
+if (!require(WebGestaltR))
 library(WebGestaltR)
 
 # Sort function
@@ -42,50 +50,74 @@ SortFun <- function(filename, Adjpcol, Log2fcol, Symbolcol, outName) {
   
 }
 
-# Volcano Function
-VolFun <- function(filename, Adjpcol, Log2fcol, Symbolcol, outName) {
-  
-  if((grepl("\\.xlsx$", filename)))
-    DF_Raw <- read.xlsx(filename, colNames = TRUE)
-  else if(grepl("\\.csv$", filename))
-    DF_Raw <- read_csv(filename,
-                   show_col_types = FALSE,
-                   col_names = TRUE)
-  
-    DF_Raw <- DF_Raw %>%
-      dplyr::rename(Adjp=Adjpcol, 
-           Log2f=Log2fcol,
-           SymbolI=Symbolcol) %>%
-    mutate(
-      SaR = case_when(
-        Log2f > .3 & Adjp < .05 ~ "Upregulated",
-        Log2f < -.3 & Adjp < .05 ~ "Downregulated",
-        TRUE ~ "NotSignificant"
-      ))
+# Volcano function
+VolFun <-
+  function(filename,
+           Adjpcol,
+           Log2fcol,
+           Symbolcol,
+           outName) {
+   
+    if (!require(tidyverse))
+      install.packages('tidyverse')
+    library(tidyverse)
+    if (!require(openxlsx))
+      install.packages('openxlsx')
+    library(openxlsx)
+    if (!require(mygene))
+      BiocManager::install('mygene')
+    library(mygene)
+    if (!require(ggrepel))
+      install.packages('ggrepel')
+    library(ggrepel)
     
-    GLabel <- getGenes(DF_Raw$SymbolI, fields=c('symbol', 'name')) %>%
+    if ((grepl("\\.xlsx$", filename)))
+      DF_Raw <- read.xlsx(filename, colNames = TRUE)
+    else if (grepl("\\.csv$", filename))
+      DF_Raw <- read_csv(filename,
+                         show_col_types = FALSE,
+                         col_names = TRUE)
+    else{
+      stop("ERROR: .csv and .xlsx are only acceptable file formats")
+    }
+    
+    DF_Raw <- DF_Raw %>%
+      dplyr::rename(Adjp = Adjpcol,
+                    Log2f = Log2fcol,
+                    SymbolI = Symbolcol) %>%
+      mutate(
+        SaR = case_when(
+          Log2f > .3 & Adjp < .05 ~ "Upregulated",
+          Log2f < -.3 & Adjp < .05 ~ "Downregulated",
+          TRUE ~ "NotSignificant"
+        )
+      )
+    
+    GLabel <-
+      getGenes(DF_Raw$SymbolI, fields = c('symbol', 'name')) %>%
       as.data.frame()
     
     DF_Raw <- mutate(DF_Raw,
-                 Symbol = GLabel$symbol,
-                 Name = GLabel$name)
-  
-  ggplot(DF_Raw, aes(x=Log2f, y=-log10(Adjp)), label=SaR) +
-    geom_point(aes(color=SaR), size=1) +
-    scale_color_manual(values=c('blue', 'grey70', "green3")) +
-    theme_bw() + 
-    theme(panel.border = element_blank(),
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          axis.line = element_line(colour = "black")) +
-    xlim(-5, 5) +
-    geom_label_repel(
-      data=slice_min(DF_Raw, Adjp,n=10), aes(label= Symbol))
-  
-  ggsave(paste(outName, "Volcano .pdf"),
-         plot = last_plot())
-  
-}
+                     Symbol = GLabel$symbol,
+                     Name = GLabel$name)
+    
+    ggplot(DF_Raw, aes(x = Log2f, y = -log10(Adjp)), label = SaR) +
+      geom_point(aes(color = SaR), size = 1) +
+      scale_color_manual(values = c('blue', 'grey70', "green3")) +
+      theme_bw() +
+      theme(
+        panel.border = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "black")
+      ) +
+      xlim(-5, 5) +
+      geom_label_repel(data = slice_min(DF_Raw, Adjp, n = 10), aes(label = Symbol))
+    
+    ggsave(paste(outName, "Volcano .pdf"),
+           plot = last_plot())
+    
+  }
 
 # WebG Function
 WebG <- function(filename, Adjpcol, Log2fcol, Symbolcol, outName) {
@@ -138,45 +170,3 @@ WebG <- function(filename, Adjpcol, Log2fcol, Symbolcol, outName) {
     setCoverNum = 10,
     hostName = "http://www.webgestalt.org/")
 }
-
-# DP IR vs DP Sham
-SortFun(filename = "DP IR vs DP Sham DEGs.xlsx",
-        Adjpcol = 7,
-        Log2fcol = 3,
-        Symbolcol = 1,
-        outName = "DP IR vs DP Sham")
-
-VolFun(filename = "DP IR vs DP Sham DEGs.xlsx",
-       Adjpcol = 7,
-       Log2fcol = 3,
-       Symbolcol = 1,
-       outName = "DP IR vs DP Sham")
-
-WebG(filename = "DP IR vs DP Sham DEGs.xlsx",
-     Adjpcol = 7,
-     Log2fcol = 3,
-     Symbolcol = 1,
-     outName = "DP IR vs DP Sham")
-
-# DP Sham vs CD Sham
-SortFun(filename = "DP Sham vs CD Sham DEGs.xlsx",
-        Adjpcol = 7,
-        Log2fcol = 3,
-        Symbolcol = 1,
-        outName = "DP Sham vs CD Sham")
-
-VolFun(filename = "DP Sham vs CD Sham DEGs.xlsx",
-       Adjpcol = 7,
-       Log2fcol = 3,
-       Symbolcol = 1,
-       outName = "DP Sham vs CD Sham Volcano")
-
-WebG(filename = "DP Sham vs CD Sham DEGs.xlsx",
-       Adjpcol = 7,
-       Log2fcol = 3,
-       Symbolcol = 1,
-       outName = "DP Sham vs CD Sham")
-
-
-
-
