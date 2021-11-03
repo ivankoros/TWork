@@ -9,6 +9,8 @@ SVW <- function(filename,
   if (!require(openxlsx))
     install.packages('openxlsx')
   library(openxlsx)
+    if (!require(BiocManager))
+    install.packages('BiocManager')
   if (!require(mygene))
     BiocManager::install('mygene')
   library(mygene)
