@@ -17,6 +17,9 @@ SVW <- function(filename,
   if (!require(ggrepel))
     install.packages('ggrepel')
   library(ggrepel)
+   if (!require(WebGestaltR))
+    install.packages('WebGestaltR')
+  library(WebGestaltR)
   
   if ((grepl("\\.xlsx$", filename)))
     DF_Raw <- read.xlsx(filename, colNames = TRUE)
