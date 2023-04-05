@@ -32,7 +32,30 @@ if (!require(librarian)) {
 }
 librarian::shelf("Bioconductor/DESeq2", "tidyverse", "openxlsx", "jokergoo/ComplexHeatmap", "Bioconductor/WebGestaltR", "BiocManager", "slowkow/ggrepel")
 ```
-## Functions
+## Combined Function (I recommend this)
+1. `SVW`: This function streamlines the entire workflow for analyzing genomic data. It takes a `.csv` or `.xlsx` input file, and generates filtered data, a volcano plot, and enrichment results using WebGestaltR.
+
+    - `filename`: The input file in `.csv` or `.xlsx` format.
+    - `Adjpcol`: The column name for adjusted p-values in the input file.
+    - `Log2fcol`: The column name for log2 fold change values in the input file.
+    - `Symbolcol`: The column name for gene symbols in the input file.
+    - `outName`: The output name for the generated files.
+ 
+ After installing the required packages, use the SVW function with your specific input parameters:
+ ```R
+ SVW(filename = "example_data.csv",
+    Adjpcol = "adj.P.Val",
+    Log2fcol = "logFC",
+    Symbolcol = "Gene.symbol",
+    outName = "Example_Analysis")
+ ```
+ This will generate the following output files in a new directory:
+
+ - A filtered data file with significant genes (upregulated, downregulated, and not significant) based on the provided cutoff values.
+ - A volcano plot visualizing the significant genes.
+ - Enrichment results from WebGestaltR, which provide information about the biological processes associated with the significant genes.
+ 
+## Individual Functions
 1. **SortFun**: This function processes and sorts the genomic data.
 2. **VolFun**: This function generates a volcano plot from the genomic data.
 3. **WebG**: This function carries out WebGestaltR analysis on the genomic data.
