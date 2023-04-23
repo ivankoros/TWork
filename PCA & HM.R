@@ -1,153 +1,81 @@
-library(DESeq2)
-library(tidyverse)
-library(openxlsx)
-library(mygene)
-library(ggrepel)
-library(WebGestaltR)
-library(edgeR)
-library(apeglm)
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(DESeq2, openxlsx, tidyverse, plotly, ggplot2)
 
-DP_IR_DP_Sham <- read_tsv("Galaxy103-[Normalized_counts_file_on_data_15,_data_13,_and_others].tabular") %>%
-  column_to_rownames('...1')
+cat("Your current working directory is", getwd())
 
-Condition <- factor(c(rep("DP_Sham", 4), rep("DP_IR", 4)),
-                    levels = c("DP_IR", "DP_Sham"))
+# Download and choose "Raw Counts Matrix.csv" for below
+rawCountsMatrix <- read_csv(file.choose()) %>%
+  column_to_rownames("Identifier")
 
-DP_IR_DP_Sham_Meta <- data.frame(SampleName = colnames(DP_IR_DP_Sham), Condition)
+condition <- c(
+  rep("Baseline", 4),
+  rep("Ex 1", 3),
+  rep("Ex 2", 4),
+  rep("Baseline 2", 4),
+  rep("Ex 3", 4),
+  rep("Ex 4", 4)
+)
 
-DP_IR_DP_Sham_Load <- DESeqDataSetFromMatrix(round(DP_IR_DP_Sham),
-                                             DP_IR_DP_Sham_Meta,
-                                             ~Condition)
+# Creating metadata for DESeq data set creation
+metaData <- data.frame(SampleName = colnames(rawCountsMatrix),
+                   Condition = condition)
 
-DP_IR_DP_Sham_DESeq <- DESeq(DP_IR_DP_Sham_Load)
-# relevel(DP_IR_DP_Sham_DESeq$Condition, ref = "DP_Sham")
+DFforDeseq <- DESeqDataSetFromMatrix(round(rawCountsMatrix),
+                                   metaData,
+                                   ~ Condition)
+# DESeq analysis and results
+DESeqDF <- DESeq(DFforDeseq,
+                 fitType = "parametric")
 
-DP_IR_DP_Sham_Results <- results(DP_IR_DP_Sham_Apeglm,
-                                 alpha = .05,
-                                 contrast = c("Condition", "DP_IR", "DP_Sham"),
-                                 pAdjustMethod = "BH",) %>% 
-  as.data.frame() %>%
-  rownames_to_column("GeneID") %>%
-  write_csv("2testdel.csv")
+results <- results(DESeqDF,
+                   tidy = T,
+                   independentFiltering = T,
+                   alpha = 0.05) %>%
+  rename("Identifier" = "row")
 
-contrast =c("Condition", "DP_IR", "DP_Sham")
-DP_IR_DP_Sham_Apeglm <- lfcShrink(DP_IR_DP_Sham_DESeq,
-                                   contrast = c("Condition", "DP_IR", "DP_Sham"),
-                                   type = "ashr")
+write.xlsx(results[order(results$padj),], "Ivan Results.xlsx",
+           overwrite = T)
 
-DP_IR_DP_Sham_Apeglm <- DP_IR_DP_Sham_Apeglm %>%
-  as.data.frame() %>%
-  write_csv("2testdel.csv") %>%
-  rownames_to_column("")
+# Plotting PCA
+DESeqVST <- varianceStabilizingTransformation(DESeqDF)
 
-VolFun(filename = "2testdel.csv",
-        Adjpcol = 7,
-        Log2fcol = 3,
-        Symbolcol = 1,
-        outName = "2testdel")
+pca_results <- plotPCA(DESeqVST, intgroup = "Condition", returnData = TRUE)
 
+pca_results$SampleName <- metaData$SampleName
 
-
-
-
-testnotag <- DP_IR_DP_Sham_Results %>%
-  as.data.frame() %>%
-  filter(padj < .05,
-         abs(log2FoldChange) >= 0.305) %>%
-  drop_na(padj)
-
-  
-
-testagainst <- read.xlsx("DP IR vs DP Sham DEGs.xlsx") %>%
-  filter(`P-value.Benjamini` < .05,
-         abs(Log.2.fold.change) >= .305) %>%
-  drop_na(`P-value.Benjamini`)
+ggplot(pca_results, aes(PC1, PC2, color = Condition)) +
+  geom_point() +
+  geom_text(aes(label = SampleName), hjust = 0, vjust = 0, size = 3) +
+  scale_color_discrete(name = "Condition") +
+  xlab("PC1") +
+  ylab("PC2") +
+  ggtitle("PCA Plot with Sample Names")
 
 
 
 
 
 
+# DESeq to create CD IR v DP Sham
 
-# Sort function
-SortFun <- function(filename, Adjpcol, Log2fcol, Symbolcol, outName) {
-  
-  if((grepl("\\.xlsx$", filename)))
-    DF <- read.xlsx(filename, colNames = TRUE)
-  else if(grepl("\\.csv$", filename))
-    DF <- read_csv(filename,
-                   show_col_types = FALSE,
-                   col_names = TRUE)
-  
-  DF <- DF %>%
-    dplyr::rename(Adjp=Adjpcol, 
-                  Log2f=Log2fcol,
-                  SymbolI=Symbolcol) %>%
-    mutate(
-      SaR = case_when(
-        Log2f > .3 & Adjp < .05 ~ "Upregulated",
-        Log2f < -.3 & Adjp < .05 ~ "Downregulated",
-        TRUE ~ "NotSignificant"
-      )) %>%
-    filter(Adjp < 0.05) %>%
-    filter(abs(Log2f) >= .305) %>%
-    drop_na(SymbolI) %>%
-    as.data.frame()
-  
-  GLabel <- getGenes(DF$SymbolI, fields=c('symbol', 'name')) %>%
-    as.data.frame()
-  
-  DF <- mutate(DF,
-               Symbol = GLabel$symbol,
-               Name = GLabel$name) %>%
-    relocate(c(Symbol, Name), .before = SymbolI)
-  
-  DF <- DF %>%
-    filter(!grepl("Rik", Symbol))
-  
-  write_csv(DF, paste(outName, "Filtered.csv"))
-  
-}
+sample_condition =  condition[c(5:7, 19:23)]
 
-VolFun <- function(filename, Adjpcol, Log2fcol, Symbolcol, outName) {
-  
-  if((grepl("\\.xlsx$", filename)))
-    DF_Raw <- read.xlsx(filename, colNames = TRUE)
-  else if(grepl("\\.csv$", filename))
-    DF_Raw <- read_csv(filename,
-                       show_col_types = FALSE,
-                       col_names = TRUE)
-  
-  DF_Raw <- DF_Raw %>%
-    dplyr::rename(Adjp=Adjpcol, 
-                  Log2f=Log2fcol,
-                  SymbolI=Symbolcol) %>%
-    mutate(
-      SaR = case_when(
-        Log2f > .3 & Adjp < .05 ~ "Upregulated",
-        Log2f < -.3 & Adjp < .05 ~ "Downregulated",
-        TRUE ~ "NotSignificant"
-      ))
-  
-  GLabel <- getGenes(DF_Raw$SymbolI, fields=c('symbol', 'name')) %>%
-    as.data.frame()
-  
-  DF_Raw <- mutate(DF_Raw,
-                   Symbol = GLabel$symbol,
-                   Name = GLabel$name)
-  
-  ggplot(DF_Raw, aes(x=Log2f, y=-log10(Adjp)), label=SaR) +
-    geom_point(aes(color=SaR), size=1) +
-    scale_color_manual(values=c('blue', 'grey70', "green3")) +
-    theme_bw() + 
-    theme(panel.border = element_blank(),
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          axis.line = element_line(colour = "black")) +
-    xlim(-5, 5) +
-    geom_label_repel(
-      data=slice_min(DF_Raw, Adjp,n=10), aes(label= Symbol))
-  
-  ggsave(paste(outName, "Volcano .pdf"),
-         plot = last_plot())
-}
+metadata_sample_condition <- data.frame(SampleName = colnames(rawCountsMatrix[c(5:7, 19:23)]),
+                       Condition = sample_condition)
+
+dds_df <- DESeqDataSetFromMatrix(round(rawCountsMatrix[c(5:7, 19:23)]),
+                                          metadata_sample_condition,
+                                     ~ Condition)
+
+e# DESeq analysis and results
+deseq_out_df <- DESeq(dds_df,
+                 fitType = "parametric")
+
+results <- results(deseq_out_df,
+                   tidy = T,
+                   independentFiltering = T,
+                   alpha = 0.05) %>%
+  rename("Identifier" = "row")
+
+write.xlsx(results[order(results$padj),], "Results.xlsx",
+           overwrite = T)
